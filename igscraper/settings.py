@@ -16,6 +16,7 @@ NEWSPIDER_MODULE = 'igscraper.spiders'
 
 MONGO_URI = 'mongodb://localhost:27017/'
 MONGO_DATABASE = 'instagram'
+MONGO_COLLECTION = 'posts'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent

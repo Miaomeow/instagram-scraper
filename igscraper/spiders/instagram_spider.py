@@ -21,34 +21,36 @@ class InstagramSpider(scrapy.Spider):
     def parse(self, response):
 
         response = json.loads(response.body.decode('utf-8'))
-        data = response['tag']['media']['nodes']
+        data = response['graphql']['hashtag']['edge_hashtag_to_media']
+        page_info = data['page_info']
+        posts = data['edges']
 
-        for post in data:
+        for item in posts:
+            post = item['node']
 
-            if "caption" in post:
-                caption = post['caption']
-                tags_re = re.compile(r"#(\w+)")
-                tags = tags_re.findall(caption)
+            caption = post['edge_media_to_caption']['edges'][0]['node']['text']
+            tags_re = re.compile(r"#(\w+)")
+            tags = tags_re.findall(caption)
 
-                post_id = post['id']
-                is_video = post['is_video']
-                likes = post['likes']['count']
-                comments = post['comments']['count']
-                date = post['date']
-                media = post['thumbnail_src']
+            post_id = post['id']
+            is_video = post['is_video']
+            likes = post['edge_liked_by']['count']
+            comments = post['edge_media_to_comment']['count']
+            date = post['taken_at_timestamp']
+            media = post['thumbnail_src']
 
-                yield items.IgscraperItem({
-                    'post_id': post_id,
-                    'is_video': is_video,
-                    'caption': caption,
-                    'tags': tags,
-                    'likes': likes,
-                    'comments': comments,
-                    'date': date,
-                    'media': media
-                })
+            yield items.IgscraperItem({
+                'post_id': post_id,
+                'is_video': is_video,
+                'caption': caption,
+                'tags': tags,
+                'likes': likes,
+                'comments': comments,
+                'date': date,
+                'media': media
+            })
 
-        if response['tag']['media']['page_info']['has_next_page'] and self.count < self.limit:
+        if page_info['has_next_page'] and self.count < self.limit:
             self.count += 1
-            end_cursor = response['tag']['media']['page_info']['end_cursor']
+            end_cursor = page_info['end_cursor']
             yield scrapy.Request(self.base_url + "&max_id=%s" % end_cursor)
